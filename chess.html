@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Chess Game - Human vs Human</title>
     <style>
         * {
@@ -18,16 +18,18 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            padding: 20px;
+            padding: 10px;
+            overflow-x: auto;
         }
 
         .game-container {
             background: white;
             border-radius: 15px;
             box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-            padding: 30px;
+            padding: 20px;
             max-width: 600px;
             width: 100%;
+            min-width: 300px;
         }
 
         .game-header {
@@ -77,6 +79,7 @@
             align-items: center;
             max-width: 520px;
             margin: 0 auto;
+            overflow-x: auto;
         }
 
         .board-with-coords {
@@ -136,6 +139,8 @@
             cursor: pointer;
             position: relative;
             transition: all 0.2s ease;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
         }
 
         .square.light {
@@ -174,6 +179,8 @@
             user-select: none;
             cursor: grab;
             transition: transform 0.1s ease;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
         }
 
         .piece.white-archer {
@@ -285,14 +292,66 @@
         }
 
         @media (max-width: 600px) {
+            body {
+                padding: 5px;
+            }
+            
+            .game-container {
+                padding: 15px;
+                border-radius: 10px;
+            }
+            
             .square {
-                width: 45px;
-                height: 45px;
-                font-size: 28px;
+                width: 40px;
+                height: 40px;
+                font-size: 24px;
+            }
+            
+            .coord-label {
+                font-size: 12px;
             }
             
             .game-header h1 {
-                font-size: 2rem;
+                font-size: 1.8rem;
+                margin-bottom: 5px;
+            }
+            
+            .game-status {
+                padding: 10px;
+                font-size: 1rem;
+                margin-bottom: 15px;
+            }
+            
+            .modal-content {
+                width: 95%;
+                margin: 5% auto;
+                padding: 20px;
+            }
+            
+            .move-history {
+                max-height: 120px;
+                padding: 10px;
+            }
+        }
+        
+        @media (max-width: 400px) {
+            .square {
+                width: 35px;
+                height: 35px;
+                font-size: 20px;
+            }
+            
+            .coord-label {
+                font-size: 10px;
+            }
+            
+            .game-header h1 {
+                font-size: 1.5rem;
+            }
+            
+            .board-with-coords {
+                grid-template-columns: 15px repeat(8, 1fr) 15px;
+                grid-template-rows: 15px repeat(8, 1fr) 15px;
             }
         }
     </style>
@@ -432,6 +491,7 @@
                     square.dataset.row = row;
                     square.dataset.col = col;
                     square.addEventListener('click', handleSquareClick);
+                    square.addEventListener('touchend', handleSquareTouch);
                     
                     if (board[row][col]) {
                         const piece = document.createElement('span');
@@ -468,6 +528,20 @@
             const row = parseInt(event.currentTarget.dataset.row);
             const col = parseInt(event.currentTarget.dataset.col);
             
+            handleSquareInteraction(row, col);
+        }
+
+        function handleSquareTouch(event) {
+            event.preventDefault(); // Prevent double-tap zoom and other touch behaviors
+            if (gameOver) return;
+            
+            const row = parseInt(event.currentTarget.dataset.row);
+            const col = parseInt(event.currentTarget.dataset.col);
+            
+            handleSquareInteraction(row, col);
+        }
+
+        function handleSquareInteraction(row, col) {
             if (selectedSquare) {
                 if (selectedSquare.row === row && selectedSquare.col === col) {
                     // Deselect if clicking the same square
@@ -535,6 +609,28 @@
                                        toCol === fromCol && 
                                        capturedPiece;
             
+            // Check if a king is being captured
+            if (capturedPiece && capturedPiece.toLowerCase() === 'k') {
+                const capturedKingColor = capturedPiece === 'K' ? 'White' : 'Black';
+                const winningColor = currentPlayer === 'white' ? 'White' : 'Black';
+                
+                // Make the capture
+                if (isArcherRangedAttack) {
+                    board[toRow][toCol] = null; // Remove the king with ranged attack
+                    alert(`🏹 Archer ranged attack! The ${capturedKingColor} King is destroyed!`);
+                } else {
+                    board[toRow][toCol] = piece; // Normal capture
+                    board[fromRow][fromCol] = null;
+                }
+                
+                // End the game immediately
+                gameOver = true;
+                updateGameStatus(`Game Over! ${winningColor} wins by capturing the ${capturedKingColor} King!`, 'checkmate');
+                clearSelection();
+                initBoard();
+                return;
+            }
+            
             let knightParalyzed = false;
             let knightUndamaged = false;
             let archerRangedKill = false;
@@ -574,8 +670,7 @@
                 return;
             } else if (archerRangedKill) {
                 // Piece was killed by ranged attack, archer stays in place
-                clearSelection();
-                // Don't switch players yet, continue with normal flow
+                // Continue with normal flow to switch players
             } else {
                 // Normal move
                 board[toRow][toCol] = piece;
