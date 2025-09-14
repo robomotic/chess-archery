@@ -437,7 +437,7 @@
             <p style="margin-bottom: 15px;">Archers can move one space in any direction (horizontal, vertical, or diagonal), but <strong>only to empty squares</strong>. They cannot capture pieces by moving into them.</p>
             
             <h4 style="color: #333; margin-bottom: 8px;">Attack:</h4>
-            <p style="margin-bottom: 15px;">Archers can perform <strong>ranged attacks</strong> on Pawns, Bishops, Kings, Knights, and other Archers that are exactly <strong>2 cells away directly in front</strong> of them. The Archer stays in its original position after attacking (it doesn't move to the target square). Ranged attack targets are highlighted in <span style="color: #dc2626; font-weight: bold;">red</span>.</p>
+            <p style="margin-bottom: 15px;">Archers can perform <strong>ranged attacks</strong> on Pawns, Bishops, Kings, Knights, and other Archers that are <strong>1 or 2 cells away directly in front</strong> of them. The Archer stays in its original position after attacking (it doesn't move to the target square). Ranged attack targets are highlighted in <span style="color: #dc2626; font-weight: bold;">red</span>.</p>
             
             <h4 style="color: #333; margin-bottom: 8px;">Defense:</h4>
             <p style="margin-bottom: 15px;">Archers can be killed by any piece, including other Archers.</p>
@@ -585,8 +585,8 @@
             possibleMoves.forEach(([r, c]) => {
                 const square = getSquareElement(r, c);
                 
-                // Check if this is an archer ranged attack (2 cells away vertically)
-                if (piece.toLowerCase() === 'a' && Math.abs(r - row) === 2 && c === col && board[r][c]) {
+                // Check if this is an archer ranged attack (1 or 2 cells away vertically)
+                if (piece.toLowerCase() === 'a' && (Math.abs(r - row) === 1 || Math.abs(r - row) === 2) && c === col && board[r][c]) {
                     square.classList.add('ranged-attack');
                 } else {
                     square.classList.add('possible-move');
@@ -602,10 +602,10 @@
                 return;
             }
 
-            // Check if this is an archer ranged attack (2 cells away in front)
+            // Check if this is an archer ranged attack (1 or 2 cells away in front)
             const capturedPiece = board[toRow][toCol];
             const isArcherRangedAttack = piece.toLowerCase() === 'a' && 
-                                       Math.abs(toRow - fromRow) === 2 && 
+                                       (Math.abs(toRow - fromRow) === 1 || Math.abs(toRow - fromRow) === 2) && 
                                        toCol === fromCol && 
                                        capturedPiece;
             
@@ -931,15 +931,29 @@
                         }
                     });
                     
-                    // Ranged Attack: 2 cells away only in front, only pawns, bishops, kings, knights, and other archers
+                    // Ranged Attack: 1 or 2 cells away only in front, only pawns, bishops, kings, knights, and other archers
                     const attackDirection = isWhite ? -1 : 1;
-                    const attackRow = row + (2 * attackDirection);
-                    if (attackRow >= 0 && attackRow < 8) {
-                        const targetPiece = board[attackRow][col];
+                    
+                    // Check 1 cell away
+                    const attackRow1 = row + attackDirection;
+                    if (attackRow1 >= 0 && attackRow1 < 8) {
+                        const targetPiece = board[attackRow1][col];
                         if (targetPiece && !isPieceOwnedByCurrentPlayer(targetPiece)) {
                             const targetType = targetPiece.toLowerCase();
                             if (targetType === 'p' || targetType === 'b' || targetType === 'k' || targetType === 'n' || targetType === 'a') {
-                                moves.push([attackRow, col]);
+                                moves.push([attackRow1, col]);
+                            }
+                        }
+                    }
+                    
+                    // Check 2 cells away
+                    const attackRow2 = row + (2 * attackDirection);
+                    if (attackRow2 >= 0 && attackRow2 < 8) {
+                        const targetPiece = board[attackRow2][col];
+                        if (targetPiece && !isPieceOwnedByCurrentPlayer(targetPiece)) {
+                            const targetType = targetPiece.toLowerCase();
+                            if (targetType === 'p' || targetType === 'b' || targetType === 'k' || targetType === 'n' || targetType === 'a') {
+                                moves.push([attackRow2, col]);
                             }
                         }
                     }
