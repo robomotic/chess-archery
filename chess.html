@@ -156,6 +156,11 @@
             box-shadow: inset 0 0 0 2px #16a34a;
         }
 
+        .square.ranged-attack {
+            background-color: #fca5a5 !important;
+            box-shadow: inset 0 0 0 3px #dc2626;
+        }
+
         .square.in-check {
             background-color: #fca5a5 !important;
             box-shadow: inset 0 0 0 3px #dc2626;
@@ -171,6 +176,16 @@
             transition: transform 0.1s ease;
         }
 
+        .piece.white-archer {
+            color: white;
+            text-shadow: 1px 1px 1px black;
+        }
+
+        .piece.black-archer {
+            color: black;
+            text-shadow: 1px 1px 1px white;
+        }
+
         .piece:hover {
             transform: scale(1.1);
         }
@@ -179,6 +194,45 @@
             cursor: grabbing;
             opacity: 0.7;
             transform: scale(1.2);
+        }
+
+        .piece.disabled {
+            opacity: 0.5;
+            filter: grayscale(100%);
+            cursor: not-allowed;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 10% auto;
+            padding: 30px;
+            border-radius: 15px;
+            width: 80%;
+            max-width: 600px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close:hover {
+            color: #000;
         }
 
         .controls {
@@ -246,7 +300,8 @@
 <body>
     <div class="game-container">
         <div class="game-header">
-            <h1>♔ Chess Game ♔</h1>
+            <h1>♔ Chess Plus ♔</h1>
+            <a href="#" onclick="showRules()" style="color: #4f46e5; text-decoration: none; font-size: 14px;">🏹 Archer Rules</a>
         </div>
         
         <div id="game-status" class="game-status turn-white">
@@ -310,22 +365,51 @@
         </div>
     </div>
 
+    <!-- Rules Modal -->
+    <div id="rulesModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeRules()">&times;</span>
+            <h2 style="color: #333; margin-bottom: 20px;">♔ Chess Plus - New Rules ♔</h2>
+            
+            <h3 style="color: #4f46e5; margin-bottom: 10px;">🏹 Archer Piece</h3>
+            <p style="margin-bottom: 15px;"><strong>Location:</strong> Archers replace the pawns on B2, G2 (White) and B7, G7 (Black)</p>
+            
+            <h4 style="color: #333; margin-bottom: 8px;">Movement:</h4>
+            <p style="margin-bottom: 15px;">Archers can move one space in any direction (horizontal, vertical, or diagonal), but <strong>only to empty squares</strong>. They cannot capture pieces by moving into them.</p>
+            
+            <h4 style="color: #333; margin-bottom: 8px;">Attack:</h4>
+            <p style="margin-bottom: 15px;">Archers can perform <strong>ranged attacks</strong> on Pawns, Bishops, Kings, Knights, and other Archers that are exactly <strong>2 cells away directly in front</strong> of them. The Archer stays in its original position after attacking (it doesn't move to the target square). Ranged attack targets are highlighted in <span style="color: #dc2626; font-weight: bold;">red</span>.</p>
+            
+            <h4 style="color: #333; margin-bottom: 8px;">Defense:</h4>
+            <p style="margin-bottom: 15px;">Archers can be killed by any piece, including other Archers.</p>
+            
+            <h4 style="color: #333; margin-bottom: 8px;">🎯 Special Rule - Knight Paralysis:</h4>
+            <p style="margin-bottom: 15px;">When an Archer attacks a Knight, a coin is flipped automatically:</p>
+            <ul style="margin-left: 20px; margin-bottom: 15px;">
+                <li><strong>Heads:</strong> The Knight becomes paralyzed and cannot move for the rest of the game</li>
+                <li><strong>Tails:</strong> The Knight takes no damage and can still move normally</li>
+            </ul>
+            
+            <p style="font-style: italic; color: #666;">Paralyzed Knights appear grayed out and cannot be selected or moved.</p>
+        </div>
+    </div>
+
     <script>
         // Chess piece Unicode symbols
         const pieces = {
-            'K': '♔', 'Q': '♕', 'R': '♖', 'B': '♗', 'N': '♘', 'P': '♙',
-            'k': '♚', 'q': '♛', 'r': '♜', 'b': '♝', 'n': '♞', 'p': '♟'
+            'K': '♔', 'Q': '♕', 'R': '♖', 'B': '♗', 'N': '♘', 'P': '♙', 'A': '↑',
+            'k': '♚', 'q': '♛', 'r': '♜', 'b': '♝', 'n': '♞', 'p': '♟', 'a': '↑'
         };
 
         // Initial board state
         let board = [
             ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'],
-            ['p', 'p', 'p', 'p', 'p', 'p', 'p', 'p'],
+            ['p', 'a', 'p', 'p', 'p', 'p', 'a', 'p'],
             [null, null, null, null, null, null, null, null],
             [null, null, null, null, null, null, null, null],
             [null, null, null, null, null, null, null, null],
             [null, null, null, null, null, null, null, null],
-            ['P', 'P', 'P', 'P', 'P', 'P', 'P', 'P'],
+            ['P', 'A', 'P', 'P', 'P', 'P', 'A', 'P'],
             ['R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R']
         ];
 
@@ -335,6 +419,7 @@
         let moveHistory = [];
         let whiteKingPos = [7, 4];
         let blackKingPos = [0, 4];
+        let disabledKnights = new Set(); // Track knights that cannot move
 
         function initBoard() {
             const boardElement = document.getElementById('chess-board');
@@ -354,6 +439,21 @@
                         piece.textContent = pieces[board[row][col]];
                         piece.draggable = true;
                         piece.addEventListener('dragstart', handleDragStart);
+                        
+                        // Add archer color classes
+                        if (board[row][col] === 'A') {
+                            piece.classList.add('white-archer');
+                        } else if (board[row][col] === 'a') {
+                            piece.classList.add('black-archer');
+                        }
+                        
+                        // Check if this knight is disabled
+                        const pieceKey = `${row}-${col}`;
+                        if (disabledKnights.has(pieceKey)) {
+                            piece.classList.add('disabled');
+                            piece.draggable = false;
+                        }
+                        
                         square.appendChild(piece);
                     }
                     
@@ -379,6 +479,11 @@
             } else {
                 // Select a piece
                 if (board[row][col] && isPieceOwnedByCurrentPlayer(board[row][col])) {
+                    // Check if this is a disabled knight
+                    const pieceKey = `${row}-${col}`;
+                    if (disabledKnights.has(pieceKey)) {
+                        return; // Cannot select disabled knights
+                    }
                     selectSquare(row, col);
                 }
             }
@@ -395,7 +500,7 @@
         function clearSelection() {
             selectedSquare = null;
             document.querySelectorAll('.square').forEach(square => {
-                square.classList.remove('selected', 'possible-move');
+                square.classList.remove('selected', 'possible-move', 'ranged-attack');
             });
         }
 
@@ -405,7 +510,13 @@
             
             possibleMoves.forEach(([r, c]) => {
                 const square = getSquareElement(r, c);
-                square.classList.add('possible-move');
+                
+                // Check if this is an archer ranged attack (2 cells away vertically)
+                if (piece.toLowerCase() === 'a' && Math.abs(r - row) === 2 && c === col && board[r][c]) {
+                    square.classList.add('ranged-attack');
+                } else {
+                    square.classList.add('possible-move');
+                }
             });
         }
 
@@ -417,10 +528,59 @@
                 return;
             }
 
-            // Make the move
+            // Check if this is an archer ranged attack (2 cells away in front)
             const capturedPiece = board[toRow][toCol];
-            board[toRow][toCol] = piece;
-            board[fromRow][fromCol] = null;
+            const isArcherRangedAttack = piece.toLowerCase() === 'a' && 
+                                       Math.abs(toRow - fromRow) === 2 && 
+                                       toCol === fromCol && 
+                                       capturedPiece;
+            
+            let knightParalyzed = false;
+            let knightUndamaged = false;
+            let archerRangedKill = false;
+            
+            if (isArcherRangedAttack) {
+                if (capturedPiece.toLowerCase() === 'n') {
+                    // Archer attacking knight - flip coin
+                    const coinFlip = Math.random() < 0.5; // true = heads, false = tails
+                    if (coinFlip) {
+                        // Heads - paralyze the knight
+                        knightParalyzed = true;
+                        const knightKey = `${toRow}-${toCol}`;
+                        disabledKnights.add(knightKey);
+                        alert(`🏹 Archer ranged attack vs Knight! Coin flip: HEADS! The knight at ${String.fromCharCode(97 + toCol)}${8 - toRow} is paralyzed!`);
+                    } else {
+                        // Tails - knight takes no damage and can still move
+                        knightUndamaged = true;
+                        alert(`🏹 Archer ranged attack vs Knight! Coin flip: TAILS! The knight takes no damage!`);
+                    }
+                } else {
+                    // Archer attacking other pieces (pawn, bishop, king) - capture normally but archer stays
+                    archerRangedKill = true;
+                    board[toRow][toCol] = null; // Remove the captured piece
+                    alert(`🏹 Archer ranged attack! The ${pieces[capturedPiece]} at ${String.fromCharCode(97 + toCol)}${8 - toRow} is destroyed!`);
+                }
+            }
+            
+            // Make the move
+            if (knightParalyzed) {
+                // Knight stays but is paralyzed, archer doesn't move
+                clearSelection();
+                initBoard();
+                return;
+            } else if (knightUndamaged) {
+                // Knight stays undamaged, archer doesn't move
+                clearSelection();
+                return;
+            } else if (archerRangedKill) {
+                // Piece was killed by ranged attack, archer stays in place
+                clearSelection();
+                // Don't switch players yet, continue with normal flow
+            } else {
+                // Normal move
+                board[toRow][toCol] = piece;
+                board[fromRow][fromCol] = null;
+            }
 
             // Update king positions
             if (piece === 'K') whiteKingPos = [toRow, toCol];
@@ -657,6 +817,38 @@
                         }
                     });
                     break;
+
+                case 'a': // Archer
+                    // Movement: like king - one space in any direction, but cannot capture by moving
+                    const archerMoves = [
+                        [-1, -1], [-1, 0], [-1, 1],
+                        [0, -1],           [0, 1],
+                        [1, -1],  [1, 0],  [1, 1]
+                    ];
+                    archerMoves.forEach(([dr, dc]) => {
+                        const newRow = row + dr;
+                        const newCol = col + dc;
+                        if (newRow >= 0 && newRow < 8 && newCol >= 0 && newCol < 8) {
+                            // Archer can only move to empty squares, cannot capture by moving
+                            if (board[newRow][newCol] === null) {
+                                moves.push([newRow, newCol]);
+                            }
+                        }
+                    });
+                    
+                    // Ranged Attack: 2 cells away only in front, only pawns, bishops, kings, knights, and other archers
+                    const attackDirection = isWhite ? -1 : 1;
+                    const attackRow = row + (2 * attackDirection);
+                    if (attackRow >= 0 && attackRow < 8) {
+                        const targetPiece = board[attackRow][col];
+                        if (targetPiece && !isPieceOwnedByCurrentPlayer(targetPiece)) {
+                            const targetType = targetPiece.toLowerCase();
+                            if (targetType === 'p' || targetType === 'b' || targetType === 'k' || targetType === 'n' || targetType === 'a') {
+                                moves.push([attackRow, col]);
+                            }
+                        }
+                    }
+                    break;
             }
 
             return moves;
@@ -784,12 +976,12 @@
         function resetGame() {
             board = [
                 ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'],
-                ['p', 'p', 'p', 'p', 'p', 'p', 'p', 'p'],
+                ['p', 'a', 'p', 'p', 'p', 'p', 'a', 'p'],
                 [null, null, null, null, null, null, null, null],
                 [null, null, null, null, null, null, null, null],
                 [null, null, null, null, null, null, null, null],
                 [null, null, null, null, null, null, null, null],
-                ['P', 'P', 'P', 'P', 'P', 'P', 'P', 'P'],
+                ['P', 'A', 'P', 'P', 'P', 'P', 'A', 'P'],
                 ['R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R']
             ];
             
@@ -799,6 +991,7 @@
             moveHistory = [];
             whiteKingPos = [7, 4];
             blackKingPos = [0, 4];
+            disabledKnights.clear(); // Clear disabled knights
             
             updateGameStatus("White's Turn", 'turn-white');
             updateMoveHistory();
@@ -815,6 +1008,22 @@
                 event.target.classList.add('dragging');
             } else {
                 event.preventDefault();
+            }
+        }
+
+        function showRules() {
+            document.getElementById('rulesModal').style.display = 'block';
+        }
+
+        function closeRules() {
+            document.getElementById('rulesModal').style.display = 'none';
+        }
+
+        // Close modal when clicking outside of it
+        window.onclick = function(event) {
+            const modal = document.getElementById('rulesModal');
+            if (event.target === modal) {
+                modal.style.display = 'none';
             }
         }
 
