@@ -15,6 +15,7 @@ Archess is played on a standard 8x8 chessboard with all traditional chess pieces
 ### Key Features
 
 - **Human vs Human** gameplay
+- **Human vs Computer (Random CPU)** mode
 - **Touch-friendly** interface for mobile devices
 - **Visual move highlighting** with color-coded attack ranges
 - **Move history tracking**
@@ -56,6 +57,18 @@ Archers can be captured by any piece, including other Archers, following standar
    - Red highlights show ranged attack targets
 3. **Make Your Move**: Click or tap on a highlighted square to move or attack
 4. **Turn-Based Play**: Players alternate turns (White goes first)
+
+## 🧠 Human vs Computer Mode
+
+Archess now supports a Human vs Computer mode, where the black pieces are controlled by a CPU player using a greedy random strategy:
+
+- **Random Mode Logic:**
+  - If any black piece can attack a white piece, the CPU randomly selects one of these attacking moves and performs it.
+  - If no attacks are possible, the CPU randomly selects one of its pieces and makes a random valid move **that gets closer to a white piece** (prefers moves that reduce the distance to the nearest white piece).
+  - The CPU always avoids moves that would put its own king in check.
+  - All special rules (archer attacks, knight paralysis, etc.) are respected by the CPU.
+
+This mode can be selected from the dropdown menu at the top of the game screen. The CPU will automatically make its move after the human (white) player's turn.
 
 ## 🎯 Strategy Tips
 
