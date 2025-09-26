@@ -1147,7 +1147,6 @@
             allMoves.forEach(move => {
                 const [fromRow, fromCol, toRow, toCol] = move;
                 const targetPiece = board[toRow][toCol];
-                
                 if (targetPiece && targetPiece === targetPiece.toUpperCase()) {
                     // This is an attack on a white piece
                     attackingMoves.push(move);
@@ -1156,23 +1155,58 @@
                 }
             });
             
-            // Greedy approach: if we can attack, attack randomly; otherwise move randomly
             let selectedMove;
             if (attackingMoves.length > 0) {
                 // Choose a random attacking move
                 selectedMove = attackingMoves[Math.floor(Math.random() * attackingMoves.length)];
             } else {
-                // Choose a random non-attacking move
-                selectedMove = nonAttackingMoves[Math.floor(Math.random() * nonAttackingMoves.length)];
+                // Prefer moves that get closer to a white piece
+                const whitePositions = [];
+                for (let r = 0; r < 8; r++) {
+                    for (let c = 0; c < 8; c++) {
+                        const p = board[r][c];
+                        if (p && p === p.toUpperCase()) {
+                            whitePositions.push([r, c]);
+                        }
+                    }
+                }
+                // For each move, calculate min distance to any white piece
+                let minDist = Infinity;
+                let closerMoves = [];
+                nonAttackingMoves.forEach(move => {
+                    const [fromRow, fromCol, toRow, toCol] = move;
+                    let bestBefore = Infinity;
+                    let bestAfter = Infinity;
+                    whitePositions.forEach(([wr, wc]) => {
+                        const before = Math.abs(fromRow - wr) + Math.abs(fromCol - wc);
+                        const after = Math.abs(toRow - wr) + Math.abs(toCol - wc);
+                        if (after < bestAfter) bestAfter = after;
+                        if (before < bestBefore) bestBefore = before;
+                    });
+                    if (bestAfter < bestBefore) {
+                        if (bestAfter < minDist) {
+                            minDist = bestAfter;
+                            closerMoves = [move];
+                        } else if (bestAfter === minDist) {
+                            closerMoves.push(move);
+                        }
+                    }
+                });
+                // If there are moves that get closer, pick one randomly
+                if (closerMoves.length > 0) {
+                    selectedMove = closerMoves[Math.floor(Math.random() * closerMoves.length)];
+                } else {
+                    // Otherwise, just pick any random move
+                    selectedMove = nonAttackingMoves[Math.floor(Math.random() * nonAttackingMoves.length)];
+                }
             }
             
             const [fromRow, fromCol, toRow, toCol] = selectedMove;
             
-            // Execute the move
             setTimeout(() => {
                 isComputerThinking = false;
                 makeMove(fromRow, fromCol, toRow, toCol);
-            }, 500); // Small delay to show thinking
+            }, 500);
         }
 
         function getAllPossibleMovesForPlayer(player) {
