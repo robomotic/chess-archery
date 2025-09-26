@@ -181,16 +181,9 @@
             transition: transform 0.1s ease;
             touch-action: manipulation;
             -webkit-tap-highlight-color: transparent;
-        }
-
-        .piece.white-archer {
-            color: white;
-            text-shadow: 1px 1px 1px black;
-        }
-
-        .piece.black-archer {
-            color: black;
-            text-shadow: 1px 1px 1px white;
+            width: 90%;
+            height: 90%;
+            object-fit: contain;
         }
 
         .piece:hover {
@@ -304,7 +297,6 @@
             .square {
                 width: 40px;
                 height: 40px;
-                font-size: 24px;
             }
             
             .coord-label {
@@ -338,7 +330,6 @@
             .square {
                 width: 35px;
                 height: 35px;
-                font-size: 20px;
             }
             
             .coord-label {
@@ -454,11 +445,21 @@
     </div>
 
     <script>
-        // Chess piece Unicode symbols
-        const pieces = {
-            'K': '♔', 'Q': '♕', 'R': '♖', 'B': '♗', 'N': '♘', 'P': '♙', 'A': '↑',
-            'k': '♚', 'q': '♛', 'r': '♜', 'b': '♝', 'n': '♞', 'p': '♟', 'a': '↑'
+        // Chess piece SVG file mapping
+        const pieceFiles = {
+            'K': 'wk.svg', 'Q': 'wq.svg', 'R': 'wr.svg', 'B': 'wb.svg', 'N': 'wn.svg', 'P': 'wp.svg', 'A': 'wa.svg',
+            'k': 'bk.svg', 'q': 'bq.svg', 'r': 'br.svg', 'b': 'bb.svg', 'n': 'bn.svg', 'p': 'bp.svg', 'a': 'ba.svg'
         };
+
+        // Function to create SVG piece element
+        function createPieceElement(pieceCode) {
+            const img = document.createElement('img');
+            img.src = `../graphics/regular/${pieceFiles[pieceCode]}`;
+            img.alt = pieceCode;
+            img.className = 'piece';
+            img.draggable = true;
+            return img;
+        }
 
         // Initial board state
         let board = [
@@ -494,18 +495,8 @@
                     square.addEventListener('touchend', handleSquareTouch);
                     
                     if (board[row][col]) {
-                        const piece = document.createElement('span');
-                        piece.className = 'piece';
-                        piece.textContent = pieces[board[row][col]];
-                        piece.draggable = true;
+                        const piece = createPieceElement(board[row][col]);
                         piece.addEventListener('dragstart', handleDragStart);
-                        
-                        // Add archer color classes
-                        if (board[row][col] === 'A') {
-                            piece.classList.add('white-archer');
-                        } else if (board[row][col] === 'a') {
-                            piece.classList.add('black-archer');
-                        }
                         
                         // Check if this knight is disabled
                         const pieceKey = `${row}-${col}`;
