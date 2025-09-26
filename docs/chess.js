@@ -1001,12 +1001,35 @@ function getMinDistanceToWhitePieces(row, col) {
 function makeMinimaxMove() {
     console.log('Computer (Minimax) is thinking...');
     
-    const depth = 3; // Look ahead 3 moves (adjust for difficulty)
-    const result = minimax(board, depth, -Infinity, Infinity, true, currentPlayer);
+    const startTime = performance.now();
+    const maxTime = 150; // Maximum time in milliseconds
+    let depth = 2; // Start with depth 2 for faster response
+    let bestResult = null;
     
-    if (result.move) {
-        const [fromRow, fromCol, toRow, toCol] = result.move;
-        console.log(`Computer (Minimax) plays: ${String.fromCharCode(65 + fromCol)}${8 - fromRow} to ${String.fromCharCode(65 + toCol)}${8 - toRow} (Score: ${result.score})`);
+    // Iterative deepening with time control
+    while (depth <= 4) {
+        const result = minimax(board, depth, -Infinity, Infinity, true, currentPlayer, startTime, maxTime);
+        
+        if (result.timeOut) {
+            console.log(`Minimax timeout at depth ${depth}, using previous result`);
+            break;
+        }
+        
+        bestResult = result;
+        
+        const elapsedTime = performance.now() - startTime;
+        if (elapsedTime > maxTime * 0.7) { // Use 70% of time limit as buffer
+            console.log(`Stopping search at depth ${depth} (${elapsedTime.toFixed(1)}ms)`);
+            break;
+        }
+        
+        depth++;
+    }
+    
+    if (bestResult && bestResult.move) {
+        const [fromRow, fromCol, toRow, toCol] = bestResult.move;
+        const elapsedTime = performance.now() - startTime;
+        console.log(`Computer (Minimax) plays: ${String.fromCharCode(65 + fromCol)}${8 - fromRow} to ${String.fromCharCode(65 + toCol)}${8 - toRow} (Score: ${bestResult.score}, Time: ${elapsedTime.toFixed(1)}ms, Depth: ${depth - 1})`);
         makeMove(fromRow, fromCol, toRow, toCol);
     } else {
         console.log('No valid moves found for computer (Minimax)');
@@ -1016,7 +1039,12 @@ function makeMinimaxMove() {
 }
 
 // Minimax algorithm with alpha-beta pruning
-function minimax(boardState, depth, alpha, beta, isMaximizing, player) {
+function minimax(boardState, depth, alpha, beta, isMaximizing, player, startTime = null, maxTime = null) {
+    // Time control check
+    if (startTime && maxTime && (performance.now() - startTime) > maxTime) {
+        return { score: evaluatePosition(boardState), move: null, timeOut: true };
+    }
+    
     // Base case: leaf node or game over
     if (depth === 0 || isGameOver(boardState)) {
         return { score: evaluatePosition(boardState), move: null };
@@ -1044,7 +1072,7 @@ function minimax(boardState, depth, alpha, beta, isMaximizing, player) {
             
             if (moveResult.valid) {
                 const nextPlayer = player === 'white' ? 'black' : 'white';
-                const result = minimax(boardCopy, depth - 1, alpha, beta, false, nextPlayer);
+                const result = minimax(boardCopy, depth - 1, alpha, beta, false, nextPlayer, startTime, maxTime);
                 
                 if (result.score > maxScore) {
                     maxScore = result.score;
@@ -1074,7 +1102,7 @@ function minimax(boardState, depth, alpha, beta, isMaximizing, player) {
             
             if (moveResult.valid) {
                 const nextPlayer = player === 'white' ? 'black' : 'white';
-                const result = minimax(boardCopy, depth - 1, alpha, beta, true, nextPlayer);
+                const result = minimax(boardCopy, depth - 1, alpha, beta, true, nextPlayer, startTime, maxTime);
                 
                 if (result.score < minScore) {
                     minScore = result.score;
