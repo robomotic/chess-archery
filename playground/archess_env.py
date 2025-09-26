@@ -139,9 +139,14 @@ class ArchessEnv(gym.Env):
         """Decode action integer into from_square, to_square, action_type."""
         action_type = action % 2
         action //= 2
-        to_square = (action % 8, action // 8 % 8)
-        from_square = (action // 64 % 8, action // 512 % 8)
-        return from_square, to_square, action_type
+        to_col = action % 8
+        action //= 8
+        to_row = action % 8
+        action //= 8
+        from_col = action % 8
+        action //= 8
+        from_row = action % 8
+        return (from_row, from_col), (to_row, to_col), action_type
     
     def _encode_action(self, from_square: Tuple[int, int], to_square: Tuple[int, int], action_type: int) -> int:
         """Encode move into action integer."""
@@ -164,7 +169,7 @@ class ArchessEnv(gym.Env):
         reward = 0
         
         # Check for archer ranged attack
-        is_archer_ranged = (piece.lower() == 'a' and action_type == 1 and 
+        is_archer_ranged = (piece.lower() == 'a' and 
                            abs(to_row - from_row) <= 2 and to_col == from_col and 
                            captured_piece != '')
         
@@ -274,6 +279,89 @@ class ArchessEnv(gym.Env):
                     if target != '' and (target.isupper() != is_white):
                         moves.append((from_row + direction, from_col + dc))
         
+        elif piece == 'r':  # Rook
+            # Horizontal and vertical moves
+            directions = [(0, 1), (0, -1), (1, 0), (-1, 0)]
+            for dr, dc in directions:
+                for i in range(1, 8):
+                    new_row, new_col = from_row + i*dr, from_col + i*dc
+                    if not (0 <= new_row < 8 and 0 <= new_col < 8):
+                        break
+                    target = self.board[new_row, new_col]
+                    if target == '':
+                        moves.append((new_row, new_col))
+                    else:
+                        if target.isupper() != is_white:
+                            moves.append((new_row, new_col))
+                        break
+        
+        elif piece == 'n':  # Knight
+            knight_moves = [(-2, -1), (-2, 1), (-1, -2), (-1, 2),
+                           (1, -2), (1, 2), (2, -1), (2, 1)]
+            for dr, dc in knight_moves:
+                new_row, new_col = from_row + dr, from_col + dc
+                if 0 <= new_row < 8 and 0 <= new_col < 8:
+                    target = self.board[new_row, new_col]
+                    if target == '' or target.isupper() != is_white:
+                        moves.append((new_row, new_col))
+        
+        elif piece == 'b':  # Bishop
+            directions = [(1, 1), (1, -1), (-1, 1), (-1, -1)]
+            for dr, dc in directions:
+                for i in range(1, 8):
+                    new_row, new_col = from_row + i*dr, from_col + i*dc
+                    if not (0 <= new_row < 8 and 0 <= new_col < 8):
+                        break
+                    target = self.board[new_row, new_col]
+                    if target == '':
+                        moves.append((new_row, new_col))
+                    else:
+                        if target.isupper() != is_white:
+                            moves.append((new_row, new_col))
+                        break
+        
+        elif piece == 'q':  # Queen (combination of rook and bishop)
+            # Rook moves
+            directions = [(0, 1), (0, -1), (1, 0), (-1, 0)]
+            for dr, dc in directions:
+                for i in range(1, 8):
+                    new_row, new_col = from_row + i*dr, from_col + i*dc
+                    if not (0 <= new_row < 8 and 0 <= new_col < 8):
+                        break
+                    target = self.board[new_row, new_col]
+                    if target == '':
+                        moves.append((new_row, new_col))
+                    else:
+                        if target.isupper() != is_white:
+                            moves.append((new_row, new_col))
+                        break
+            
+            # Bishop moves
+            directions = [(1, 1), (1, -1), (-1, 1), (-1, -1)]
+            for dr, dc in directions:
+                for i in range(1, 8):
+                    new_row, new_col = from_row + i*dr, from_col + i*dc
+                    if not (0 <= new_row < 8 and 0 <= new_col < 8):
+                        break
+                    target = self.board[new_row, new_col]
+                    if target == '':
+                        moves.append((new_row, new_col))
+                    else:
+                        if target.isupper() != is_white:
+                            moves.append((new_row, new_col))
+                        break
+        
+        elif piece == 'k':  # King
+            king_moves = [(-1, -1), (-1, 0), (-1, 1),
+                         (0, -1),           (0, 1),
+                         (1, -1),  (1, 0),  (1, 1)]
+            for dr, dc in king_moves:
+                new_row, new_col = from_row + dr, from_col + dc
+                if 0 <= new_row < 8 and 0 <= new_col < 8:
+                    target = self.board[new_row, new_col]
+                    if target == '' or target.isupper() != is_white:
+                        moves.append((new_row, new_col))
+        
         elif piece == 'a':  # Archer
             # Movement (like king, but only to empty squares)
             for dr in [-1, 0, 1]:
@@ -294,9 +382,6 @@ class ArchessEnv(gym.Env):
                         # Can attack pawns, bishops, kings, knights, archers
                         if target.lower() in ['p', 'b', 'k', 'n', 'a']:
                             moves.append((attack_row, from_col))
-        
-        # Add other piece types as needed...
-        # (Knight, Bishop, Rook, Queen, King logic similar to original JS)
         
         return moves
     
