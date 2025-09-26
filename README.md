@@ -15,11 +15,13 @@ Archess is played on a standard 8x8 chessboard with all traditional chess pieces
 ### Key Features
 
 - **Human vs Human** gameplay
-- **Human vs Computer (Random CPU)** mode
+- **Multiple AI Opponents**: Random, Greedy, and strategic Minimax AI
+- **Enhanced Move History** with detailed piece notation
 - **Touch-friendly** interface for mobile devices
 - **Visual move highlighting** with color-coded attack ranges
-- **Move history tracking**
+- **Drag & Drop** support for piece movement
 - **Check/Checkmate detection**
+- **Performance optimized** AI with time controls
 - **Responsive design** that works on all screen sizes
 
 ## 🏹 The Archer Piece
@@ -57,18 +59,39 @@ Archers can be captured by any piece, including other Archers, following standar
    - Red highlights show ranged attack targets
 3. **Make Your Move**: Click or tap on a highlighted square to move or attack
 4. **Turn-Based Play**: Players alternate turns (White goes first)
+5. **Game Modes**: Select from Human vs Human or three AI difficulty levels
+6. **Move History**: Review detailed notation of all moves including piece types and special actions
 
-## 🧠 Human vs Computer Mode
+## 🧠 AI Opponents
 
-Archess now supports a Human vs Computer mode, where the black pieces are controlled by a CPU player using a greedy random strategy:
+Archess features multiple AI difficulty levels, each with unique strategies:
 
-- **Random Mode Logic:**
-  - If any black piece can attack a white piece, the CPU randomly selects one of these attacking moves and performs it.
-  - If no attacks are possible, the CPU randomly selects one of its pieces and makes a random valid move **that gets closer to a white piece** (prefers moves that reduce the distance to the nearest white piece).
-  - The CPU always avoids moves that would put its own king in check.
-  - All special rules (archer attacks, knight paralysis, etc.) are respected by the CPU.
+### **Random AI** 🎲
+- **Strategy**: Opportunistic with random movement
+- **Behavior**: 
+  - Prioritizes attacks when available
+  - Makes random moves that approach opponent pieces
+  - Avoids moves that put its own king in check
+- **Difficulty**: Beginner-friendly
 
-This mode can be selected from the dropdown menu at the top of the game screen. The CPU will automatically make its move after the human (white) player's turn.
+### **Greedy AI** 🎯  
+- **Strategy**: Material-focused tactical play
+- **Behavior**:
+  - Always captures the highest-value piece available
+  - Uses standard chess piece values (Queen=9, Rook=5, etc.)
+  - Falls back to positional play when no captures exist
+- **Difficulty**: Intermediate challenge
+
+### **Minimax AI** 🧠
+- **Strategy**: Advanced strategic planning with lookahead
+- **Behavior**:
+  - Thinks 2-4 moves ahead using minimax algorithm
+  - Evaluates positions based on material, position, king safety, and mobility
+  - Uses alpha-beta pruning for optimal performance
+  - Time-controlled computation (under 150ms per move)
+- **Difficulty**: Advanced strategic opponent
+
+All AI modes respect Archess special rules including archer ranged attacks and knight paralysis mechanics.
 
 ## 🎯 Strategy Tips
 
@@ -125,7 +148,7 @@ Under the following terms:
 ## 🚀 Getting Started
 
 1. Clone or download this repository
-2. Open `chess.html` in any modern web browser
+2. Open `docs/chess.html` in any modern web browser
 3. Start playing immediately!
 
 No build process, no installation, no dependencies - just pure chess fun with a tactical twist!
