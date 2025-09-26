@@ -63,6 +63,17 @@
             color: #7b1fa2;
         }
 
+        .computer-thinking {
+            background: #fff3e0;
+            color: #f57c00;
+            animation: pulse 1.5s ease-in-out infinite alternate;
+        }
+
+        @keyframes pulse {
+            from { opacity: 0.7; }
+            to { opacity: 1; }
+        }
+
         .check {
             background: #ffebee;
             color: #d32f2f;
@@ -256,6 +267,14 @@
             background: #4338ca;
         }
 
+        .game-mode-selector {
+            text-align: center;
+            margin-bottom: 15px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
         .move-history {
             margin-top: 20px;
             max-height: 150px;
@@ -352,6 +371,14 @@
         <div class="game-header">
             <h1>♔ Chess Plus ♔</h1>
             <a href="#" onclick="showRules()" style="color: #4f46e5; text-decoration: none; font-size: 14px;">🏹 Archer Rules</a>
+        </div>
+        
+        <div class="game-mode-selector">
+            <label for="game-mode" style="font-weight: bold; margin-right: 10px;">Game Mode:</label>
+            <select id="game-mode" onchange="changeGameMode()" style="padding: 5px; border-radius: 4px; border: 1px solid #ccc;">
+                <option value="human-vs-human">Human vs Human</option>
+                <option value="human-vs-computer">Human vs Computer (Random)</option>
+            </select>
         </div>
         
         <div id="game-status" class="game-status turn-white">
@@ -451,6 +478,12 @@
             'k': 'bk.svg', 'q': 'bq.svg', 'r': 'br.svg', 'b': 'bb.svg', 'n': 'bn.svg', 'p': 'bp.svg', 'a': 'ba.svg'
         };
 
+        // Piece names for display
+        const pieces = {
+            'K': 'King', 'Q': 'Queen', 'R': 'Rook', 'B': 'Bishop', 'N': 'Knight', 'P': 'Pawn', 'A': 'Archer',
+            'k': 'King', 'q': 'Queen', 'r': 'Rook', 'b': 'Bishop', 'n': 'Knight', 'p': 'Pawn', 'a': 'Archer'
+        };
+
         // Function to create SVG piece element
         function createPieceElement(pieceCode) {
             const img = document.createElement('img');
@@ -480,6 +513,8 @@
         let whiteKingPos = [7, 4];
         let blackKingPos = [0, 4];
         let disabledKnights = new Set(); // Track knights that cannot move
+        let gameMode = 'human-vs-human'; // 'human-vs-human' or 'human-vs-computer'
+        let isComputerThinking = false;
 
         function initBoard() {
             const boardElement = document.getElementById('chess-board');
@@ -533,6 +568,11 @@
         }
 
         function handleSquareInteraction(row, col) {
+            // Don't allow interaction if computer is thinking or if it's computer's turn
+            if (isComputerThinking || (gameMode === 'human-vs-computer' && currentPlayer === 'black')) {
+                return;
+            }
+            
             if (selectedSquare) {
                 if (selectedSquare.row === row && selectedSquare.col === col) {
                     // Deselect if clicking the same square
@@ -708,6 +748,11 @@
             clearSelection();
             initBoard();
             highlightKingInCheck();
+            
+            // If it's computer's turn in human vs computer mode, make computer move
+            if (gameMode === 'human-vs-computer' && currentPlayer === 'black' && !gameOver) {
+                setTimeout(makeComputerMove, 1000); // Add delay for better UX
+            }
         }
 
         function isValidMove(fromRow, fromCol, toRow, toCol, piece) {
@@ -1073,6 +1118,123 @@
             });
         }
 
+        function changeGameMode() {
+            const select = document.getElementById('game-mode');
+            gameMode = select.value;
+            resetGame(); // Reset the game when mode changes
+        }
+
+        function makeComputerMove() {
+            if (gameOver || currentPlayer !== 'black' || gameMode !== 'human-vs-computer') {
+                return;
+            }
+            
+            isComputerThinking = true;
+            updateGameStatus("Computer is thinking...", 'computer-thinking');
+            
+            // Get all possible moves for black pieces
+            const allMoves = getAllPossibleMovesForPlayer('black');
+            
+            if (allMoves.length === 0) {
+                isComputerThinking = false;
+                return;
+            }
+            
+            // Separate attacking moves from non-attacking moves
+            const attackingMoves = [];
+            const nonAttackingMoves = [];
+            
+            allMoves.forEach(move => {
+                const [fromRow, fromCol, toRow, toCol] = move;
+                const targetPiece = board[toRow][toCol];
+                
+                if (targetPiece && targetPiece === targetPiece.toUpperCase()) {
+                    // This is an attack on a white piece
+                    attackingMoves.push(move);
+                } else {
+                    nonAttackingMoves.push(move);
+                }
+            });
+            
+            // Greedy approach: if we can attack, attack randomly; otherwise move randomly
+            let selectedMove;
+            if (attackingMoves.length > 0) {
+                // Choose a random attacking move
+                selectedMove = attackingMoves[Math.floor(Math.random() * attackingMoves.length)];
+            } else {
+                // Choose a random non-attacking move
+                selectedMove = nonAttackingMoves[Math.floor(Math.random() * nonAttackingMoves.length)];
+            }
+            
+            const [fromRow, fromCol, toRow, toCol] = selectedMove;
+            
+            // Execute the move
+            setTimeout(() => {
+                isComputerThinking = false;
+                makeMove(fromRow, fromCol, toRow, toCol);
+            }, 500); // Small delay to show thinking
+        }
+
+        function getAllPossibleMovesForPlayer(player) {
+            const moves = [];
+            
+            for (let row = 0; row < 8; row++) {
+                for (let col = 0; col < 8; col++) {
+                    const piece = board[row][col];
+                    if (piece && ((player === 'white' && piece === piece.toUpperCase()) || 
+                                  (player === 'black' && piece === piece.toLowerCase()))) {
+                        // Check if this piece is disabled (for knights)
+                        const pieceKey = `${row}-${col}`;
+                        if (disabledKnights.has(pieceKey)) {
+                            continue;
+                        }
+                        
+                        const possibleMoves = getPossibleMoves(row, col, piece);
+                        possibleMoves.forEach(([toRow, toCol]) => {
+                            // Check if this move would be legal (doesn't put own king in check)
+                            if (wouldMoveBeValid(row, col, toRow, toCol, piece, player)) {
+                                moves.push([row, col, toRow, toCol]);
+                            }
+                        });
+                    }
+                }
+            }
+            
+            return moves;
+        }
+
+        function wouldMoveBeValid(fromRow, fromCol, toRow, toCol, piece, player) {
+            // Simulate the move
+            const originalPiece = board[toRow][toCol];
+            board[toRow][toCol] = piece;
+            board[fromRow][fromCol] = null;
+            
+            // Update king position if king moved
+            let originalKingPos = null;
+            if (piece === 'K') {
+                originalKingPos = [...whiteKingPos];
+                whiteKingPos = [toRow, toCol];
+            } else if (piece === 'k') {
+                originalKingPos = [...blackKingPos];
+                blackKingPos = [toRow, toCol];
+            }
+            
+            // Check if this move puts own king in check
+            const wouldBeInCheck = isKingInCheck(player);
+            
+            // Restore the board
+            board[fromRow][fromCol] = piece;
+            board[toRow][toCol] = originalPiece;
+            
+            // Restore king position
+            if (originalKingPos) {
+                if (piece === 'K') whiteKingPos = originalKingPos;
+                if (piece === 'k') blackKingPos = originalKingPos;
+            }
+            
+            return !wouldBeInCheck;
+        }
+
         function resetGame() {
             board = [
                 ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'],
@@ -1092,6 +1254,7 @@
             whiteKingPos = [7, 4];
             blackKingPos = [0, 4];
             disabledKnights.clear(); // Clear disabled knights
+            isComputerThinking = false;
             
             updateGameStatus("White's Turn", 'turn-white');
             updateMoveHistory();
@@ -1099,6 +1262,12 @@
         }
 
         function handleDragStart(event) {
+            // Don't allow drag if computer is thinking or if it's computer's turn
+            if (isComputerThinking || (gameMode === 'human-vs-computer' && currentPlayer === 'black')) {
+                event.preventDefault();
+                return;
+            }
+            
             const square = event.target.parentElement;
             const row = parseInt(square.dataset.row);
             const col = parseInt(square.dataset.col);
