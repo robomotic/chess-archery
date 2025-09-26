@@ -296,13 +296,10 @@ function makeMove(fromRow, fromCol, toRow, toCol) {
     // Make the move
     if (knightParalyzed) {
         // Knight stays but is paralyzed, archer doesn't move
-        clearSelection();
-        initBoard();
-        return;
+        // Don't return early - continue to switch players
     } else if (knightUndamaged) {
         // Knight stays undamaged, archer doesn't move
-        clearSelection();
-        return;
+        // Don't return early - continue to switch players
     } else if (archerRangedKill) {
         // Piece was killed by ranged attack, archer stays in place
         // Continue with normal flow to switch players
@@ -485,6 +482,12 @@ function getPossibleMoves(row, col, piece) {
             break;
 
         case 'n': // Knight
+            // Check if knight is disabled (paralyzed)
+            const knightKey = `${row}-${col}`;
+            if (disabledKnights.has(knightKey)) {
+                return []; // Disabled knights cannot move
+            }
+            
             const knightMoves = [
                 [-2, -1], [-2, 1], [-1, -2], [-1, 2],
                 [1, -2], [1, 2], [2, -1], [2, 1]

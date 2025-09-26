@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Knight Paralysis</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        button { padding: 10px; margin: 5px; }
+        .result { margin: 10px 0; padding: 10px; background: #f0f0f0; }
+    </style>
+</head>
+<body>
+    <h1>Knight Paralysis Test</h1>
+    
+    <button onclick="testKnightMoves()">Test Knight Moves</button>
+    <button onclick="testKnightParalysis()">Test Knight Paralysis</button>
+    <button onclick="resetTest()">Reset</button>
+    
+    <div id="result"></div>
+    
+    <script>
+        // Import necessary functions from chess.js (simplified for testing)
+        let board = [
+            ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'],
+            ['p', 'a', 'p', 'p', 'p', 'p', 'a', 'p'],
+            [null, null, null, null, null, null, null, null],
+            [null, null, null, null, null, null, null, null],
+            [null, null, null, null, null, null, null, null],
+            [null, null, null, null, null, null, null, null],
+            ['P', 'A', 'P', 'P', 'P', 'P', 'A', 'P'],
+            ['R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R']
+        ];
+
+        let disabledKnights = new Set();
+        let currentPlayer = 'white';
+
+        function getPossibleMoves(row, col, piece) {
+            const moves = [];
+            if (!piece) return moves;
+            
+            const pieceType = piece.toLowerCase();
+            
+            if (pieceType === 'n') {
+                // Check if knight is disabled (paralyzed)
+                const knightKey = `${row}-${col}`;
+                if (disabledKnights.has(knightKey)) {
+                    return []; // Disabled knights cannot move
+                }
+                
+                const knightMoves = [
+                    [-2, -1], [-2, 1], [-1, -2], [-1, 2],
+                    [1, -2], [1, 2], [2, -1], [2, 1]
+                ];
+                knightMoves.forEach(([dr, dc]) => {
+                    const newRow = row + dr;
+                    const newCol = col + dc;
+                    if (newRow >= 0 && newRow < 8 && newCol >= 0 && newCol < 8) {
+                        if (board[newRow][newCol] === null || !isPieceOwnedByCurrentPlayer(board[newRow][newCol])) {
+                            moves.push([newRow, newCol]);
+                        }
+                    }
+                });
+            }
+            return moves;
+        }
+
+        function isPieceOwnedByCurrentPlayer(piece) {
+            if (currentPlayer === 'white') {
+                return piece === piece.toUpperCase();
+            } else {
+                return piece === piece.toLowerCase();
+            }
+        }
+
+        function testKnightMoves() {
+            // Place white knight at b4 (row 4, col 1)
+            board[4][1] = 'N';
+            currentPlayer = 'white';
+            
+            const moves = getPossibleMoves(4, 1, 'N');
+            document.getElementById('result').innerHTML = 
+                `<div class="result">
+                    <h3>Normal Knight Moves Test</h3>
+                    <p>Knight at b4 (4,1) has ${moves.length} possible moves:</p>
+                    <p>${moves.map(([r,c]) => `(${r},${c})`).join(', ')}</p>
+                </div>`;
+        }
+
+        function testKnightParalysis() {
+            // Place white knight at b4 and paralyze it
+            board[4][1] = 'N';
+            disabledKnights.add('4-1');
+            currentPlayer = 'white';
+            
+            const moves = getPossibleMoves(4, 1, 'N');
+            document.getElementById('result').innerHTML = 
+                `<div class="result">
+                    <h3>Paralyzed Knight Test</h3>
+                    <p>Paralyzed knight at b4 (4,1) has ${moves.length} possible moves:</p>
+                    <p>${moves.map(([r,c]) => `(${r},${c})`).join(', ')}</p>
+                    <p>Disabled knights set: ${Array.from(disabledKnights).join(', ')}</p>
+                </div>`;
+        }
+
+        function resetTest() {
+            disabledKnights.clear();
+            board[4][1] = null;
+            document.getElementById('result').innerHTML = '<div class="result">Test reset</div>';
+        }
+    </script>
+</body>
+</html>

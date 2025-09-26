@@ -296,6 +296,10 @@ class ArchessEnv(gym.Env):
                         break
         
         elif piece == 'n':  # Knight
+            # Check if knight is disabled (paralyzed)
+            if (from_row, from_col) in self.disabled_knights:
+                return []  # Disabled knights cannot move
+            
             knight_moves = [(-2, -1), (-2, 1), (-1, -2), (-1, 2),
                            (1, -2), (1, 2), (2, -1), (2, 1)]
             for dr, dc in knight_moves:
@@ -397,6 +401,29 @@ class ArchessEnv(gym.Env):
             return True
         elif not black_king_exists:
             self.winner = 'white'
+            self.game_over = True
+            return True
+        
+        # Check for stalemate - no valid moves available for current player
+        has_valid_moves = False
+        for from_row in range(8):
+            for from_col in range(8):
+                piece = self.board[from_row, from_col]
+                if piece != '':
+                    is_current_player_piece = (
+                        (self.current_player == 'white' and piece.isupper()) or
+                        (self.current_player == 'black' and piece.islower())
+                    )
+                    if is_current_player_piece:
+                        possible_moves = self._get_possible_moves((from_row, from_col))
+                        if possible_moves:
+                            has_valid_moves = True
+                            break
+            if has_valid_moves:
+                break
+        
+        if not has_valid_moves:
+            self.winner = 'draw'
             self.game_over = True
             return True
         
