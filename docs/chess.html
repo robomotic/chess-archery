@@ -378,6 +378,7 @@
             <select id="game-mode" onchange="changeGameMode()" style="padding: 5px; border-radius: 4px; border: 1px solid #ccc;">
                 <option value="human-vs-human">Human vs Human</option>
                 <option value="human-vs-computer">Human vs Computer (Random)</option>
+                <option value="human-vs-greedy">Human vs Computer (Greedy)</option>
             </select>
         </div>
         
@@ -515,6 +516,12 @@
         let disabledKnights = new Set(); // Track knights that cannot move
         let gameMode = 'human-vs-human'; // 'human-vs-human' or 'human-vs-computer'
         let isComputerThinking = false;
+
+        // Piece values for greedy CPU
+        const pieceValues = {
+            'P': 1, 'A': 2, 'N': 3, 'B': 3, 'R': 5, 'Q': 9, 'K': 1000,
+            'p': 1, 'a': 2, 'n': 3, 'b': 3, 'r': 5, 'q': 9, 'k': 1000
+        };
 
         function initBoard() {
             const boardElement = document.getElementById('chess-board');
@@ -1125,7 +1132,7 @@
         }
 
         function makeComputerMove() {
-            if (gameOver || currentPlayer !== 'black' || gameMode !== 'human-vs-computer') {
+            if (gameOver || (gameMode !== 'human-vs-computer' && gameMode !== 'human-vs-greedy') || currentPlayer !== 'black') {
                 return;
             }
             
@@ -1147,192 +1154,97 @@
             allMoves.forEach(move => {
                 const [fromRow, fromCol, toRow, toCol] = move;
                 const targetPiece = board[toRow][toCol];
-                if (targetPiece && targetPiece === targetPiece.toUpperCase()) {
-                    // This is an attack on a white piece
+                if (targetPiece && targetPiece.toLowerCase() !== 'k') {
                     attackingMoves.push(move);
                 } else {
                     nonAttackingMoves.push(move);
                 }
             });
             
-            let selectedMove;
+            let selectedMove = null;
+            
             if (attackingMoves.length > 0) {
-                // Choose a random attacking move
-                selectedMove = attackingMoves[Math.floor(Math.random() * attackingMoves.length)];
-            } else {
-                // Prefer moves that get closer to a white piece
-                const whitePositions = [];
-                for (let r = 0; r < 8; r++) {
-                    for (let c = 0; c < 8; c++) {
-                        const p = board[r][c];
-                        if (p && p === p.toUpperCase()) {
-                            whitePositions.push([r, c]);
+                if (gameMode === 'human-vs-greedy') {
+                    // Greedy: pick the attack that maximizes the value of the captured piece
+                    let maxValue = -Infinity;
+                    let bestMoves = [];
+                    attackingMoves.forEach(move => {
+                        const [fromRow, fromCol, toRow, toCol] = move;
+                        const targetPiece = board[toRow][toCol];
+                        const value = pieceValues[targetPiece] || 0;
+                        if (value > maxValue) {
+                            maxValue = value;
+                            bestMoves = [move];
+                        } else if (value === maxValue) {
+                            bestMoves.push(move);
                         }
-                    }
-                }
-                // For each move, calculate min distance to any white piece
-                let minDist = Infinity;
-                let closerMoves = [];
-                nonAttackingMoves.forEach(move => {
-                    const [fromRow, fromCol, toRow, toCol] = move;
-                    let bestBefore = Infinity;
-                    let bestAfter = Infinity;
-                    whitePositions.forEach(([wr, wc]) => {
-                        const before = Math.abs(fromRow - wr) + Math.abs(fromCol - wc);
-                        const after = Math.abs(toRow - wr) + Math.abs(toCol - wc);
-                        if (after < bestAfter) bestAfter = after;
-                        if (before < bestBefore) bestBefore = before;
                     });
-                    if (bestAfter < bestBefore) {
-                        if (bestAfter < minDist) {
-                            minDist = bestAfter;
-                            closerMoves = [move];
-                        } else if (bestAfter === minDist) {
-                            closerMoves.push(move);
-                        }
-                    }
-                });
-                // If there are moves that get closer, pick one randomly
-                if (closerMoves.length > 0) {
-                    selectedMove = closerMoves[Math.floor(Math.random() * closerMoves.length)];
+                    selectedMove = bestMoves[Math.floor(Math.random() * bestMoves.length)];
                 } else {
-                    // Otherwise, just pick any random move
-                    selectedMove = nonAttackingMoves[Math.floor(Math.random() * nonAttackingMoves.length)];
+                    // Random: pick any attack
+                    selectedMove = attackingMoves[Math.floor(Math.random() * attackingMoves.length)];
                 }
+            } else {
+                // No attacking moves, pick a non-attacking move or repeat last resort
+                selectedMove = nonAttackingMoves[Math.floor(Math.random() * nonAttackingMoves.length)];
             }
             
             const [fromRow, fromCol, toRow, toCol] = selectedMove;
+            const piece = board[fromRow][fromCol];
+            board[toRow][toCol] = piece;
+            board[fromRow][fromCol] = null;
+
+            // Update king positions
+            if (piece === 'K') whiteKingPos = [toRow, toCol];
+            if (piece === 'k') blackKingPos = [toRow, toCol];
+
+            // Switch players
+            currentPlayer = currentPlayer === 'white' ? 'black' : 'white';
             
-            setTimeout(() => {
-                isComputerThinking = false;
-                makeMove(fromRow, fromCol, toRow, toCol);
-            }, 500);
+            // Check for check/checkmate
+            const opponentInCheck = isKingInCheck(currentPlayer);
+            if (opponentInCheck) {
+                if (isCheckmate(currentPlayer)) {
+                    gameOver = true;
+                    updateGameStatus(`Checkmate! ${currentPlayer === 'white' ? 'Black' : 'White'} wins!`, 'checkmate');
+                } else {
+                    updateGameStatus(`${currentPlayer === 'white' ? 'White' : 'Black'}'s Turn - In Check!`, 'check');
+                }
+            } else {
+                updateGameStatus(`${currentPlayer === 'white' ? 'White' : 'Black'}'s Turn`, `turn-${currentPlayer}`);
+            }
+
+            clearSelection();
+            initBoard();
+            highlightKingInCheck();
+            
+            isComputerThinking = false;
         }
 
         function getAllPossibleMovesForPlayer(player) {
-            const moves = [];
+            const allMoves = [];
+            const isWhite = player === 'white';
             
             for (let row = 0; row < 8; row++) {
                 for (let col = 0; col < 8; col++) {
                     const piece = board[row][col];
-                    if (piece && ((player === 'white' && piece === piece.toUpperCase()) || 
-                                  (player === 'black' && piece === piece.toLowerCase()))) {
-                        // Check if this piece is disabled (for knights)
-                        const pieceKey = `${row}-${col}`;
-                        if (disabledKnights.has(pieceKey)) {
-                            continue;
-                        }
-                        
+                    if (piece && ((isWhite && piece === piece.toUpperCase()) || (!isWhite && piece === piece.toLowerCase()))) {
                         const possibleMoves = getPossibleMoves(row, col, piece);
-                        possibleMoves.forEach(([toRow, toCol]) => {
-                            // Check if this move would be legal (doesn't put own king in check)
-                            if (wouldMoveBeValid(row, col, toRow, toCol, piece, player)) {
-                                moves.push([row, col, toRow, toCol]);
-                            }
+                        possibleMoves.forEach(move => {
+                            allMoves.push([row, col, move[0], move[1]]);
                         });
                     }
                 }
             }
             
-            return moves;
+            return allMoves;
         }
 
-        function wouldMoveBeValid(fromRow, fromCol, toRow, toCol, piece, player) {
-            // Simulate the move
-            const originalPiece = board[toRow][toCol];
-            board[toRow][toCol] = piece;
-            board[fromRow][fromCol] = null;
-            
-            // Update king position if king moved
-            let originalKingPos = null;
-            if (piece === 'K') {
-                originalKingPos = [...whiteKingPos];
-                whiteKingPos = [toRow, toCol];
-            } else if (piece === 'k') {
-                originalKingPos = [...blackKingPos];
-                blackKingPos = [toRow, toCol];
-            }
-            
-            // Check if this move puts own king in check
-            const wouldBeInCheck = isKingInCheck(player);
-            
-            // Restore the board
-            board[fromRow][fromCol] = piece;
-            board[toRow][toCol] = originalPiece;
-            
-            // Restore king position
-            if (originalKingPos) {
-                if (piece === 'K') whiteKingPos = originalKingPos;
-                if (piece === 'k') blackKingPos = originalKingPos;
-            }
-            
-            return !wouldBeInCheck;
-        }
-
-        function resetGame() {
-            board = [
-                ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'],
-                ['p', 'a', 'p', 'p', 'p', 'p', 'a', 'p'],
-                [null, null, null, null, null, null, null, null],
-                [null, null, null, null, null, null, null, null],
-                [null, null, null, null, null, null, null, null],
-                [null, null, null, null, null, null, null, null],
-                ['P', 'A', 'P', 'P', 'P', 'P', 'A', 'P'],
-                ['R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R']
-            ];
-            
-            currentPlayer = 'white';
-            selectedSquare = null;
-            gameOver = false;
-            moveHistory = [];
-            whiteKingPos = [7, 4];
-            blackKingPos = [0, 4];
-            disabledKnights.clear(); // Clear disabled knights
-            isComputerThinking = false;
-            
-            updateGameStatus("White's Turn", 'turn-white');
-            updateMoveHistory();
+        // Initialize the board on page load
+        window.onload = () => {
             initBoard();
-        }
-
-        function handleDragStart(event) {
-            // Don't allow drag if computer is thinking or if it's computer's turn
-            if (isComputerThinking || (gameMode === 'human-vs-computer' && currentPlayer === 'black')) {
-                event.preventDefault();
-                return;
-            }
-            
-            const square = event.target.parentElement;
-            const row = parseInt(square.dataset.row);
-            const col = parseInt(square.dataset.col);
-            
-            if (isPieceOwnedByCurrentPlayer(board[row][col])) {
-                selectSquare(row, col);
-                event.target.classList.add('dragging');
-            } else {
-                event.preventDefault();
-            }
-        }
-
-        function showRules() {
-            document.getElementById('rulesModal').style.display = 'block';
-        }
-
-        function closeRules() {
-            document.getElementById('rulesModal').style.display = 'none';
-        }
-
-        // Close modal when clicking outside of it
-        window.onclick = function(event) {
-            const modal = document.getElementById('rulesModal');
-            if (event.target === modal) {
-                modal.style.display = 'none';
-            }
-        }
-
-        // Initialize the game
-        initBoard();
-        updateGameStatus("White's Turn", 'turn-white');
+            updateGameStatus("White's Turn", 'turn-white');
+        };
     </script>
 </body>
 </html>
