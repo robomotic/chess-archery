@@ -4,7 +4,9 @@ A modern chess variant that introduces the **Archer** piece, adding new tactical
 
 ## 🎮 Play Online
 
-Open `chess.html` in your web browser to play Archess immediately - no installation required!
+Open `docs/chess.html` in your web browser to play Archess immediately - no installation required!
+
+The game is also ready for GitHub Pages deployment with all graphics properly configured.
 
 ## 🏹 Game Overview
 
