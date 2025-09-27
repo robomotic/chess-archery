@@ -781,6 +781,35 @@ function resetGame() {
     initBoard();
 }
 
+function exportGameHistory() {
+    if (moveHistory.length === 0) {
+        alert("No moves to export. Play some moves first!");
+        return;
+    }
+    
+    // Create the content with each move on a new line
+    const content = moveHistory.join('\n');
+    
+    // Create a blob with the content
+    const blob = new Blob([content], { type: 'text/plain' });
+    
+    // Create a temporary URL for the blob
+    const url = URL.createObjectURL(blob);
+    
+    // Create a temporary anchor element to trigger the download
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'chess_game_history.txt';
+    
+    // Append to body, click, and remove
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    
+    // Clean up the URL
+    URL.revokeObjectURL(url);
+}
+
 function makeComputerMove() {
     if (gameMode === 'human-vs-human') return;
     
