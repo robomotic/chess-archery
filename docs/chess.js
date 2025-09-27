@@ -1235,7 +1235,16 @@ function evaluateKingSafety(boardState) {
         }
     }
     
-    // Penalize exposed kings
+    // Heavy penalty for being in check
+    if (whiteKing && isKingInCheckForBoard(boardState, 'white')) {
+        score -= 50; // Heavy penalty for white king in check
+    }
+    
+    if (blackKing && isKingInCheckForBoard(boardState, 'black')) {
+        score += 50; // Heavy penalty for black king in check (positive because we want to avoid this for black)
+    }
+    
+    // Penalize exposed kings (positional)
     if (whiteKing) {
         const [row, col] = whiteKing;
         if (row < 6) score -= 1; // King too far forward
