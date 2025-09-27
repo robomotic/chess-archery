@@ -84,6 +84,17 @@
             color: white;
         }
 
+        .edit-mode {
+            background: #fff8e1;
+            color: #e65100;
+        }
+
+        .remove-zone-active {
+            background: #ffebee !important;
+            color: #d32f2f !important;
+            border: 2px dashed #d32f2f !important;
+        }
+
         .board-container {
             display: flex;
             flex-direction: column;
@@ -300,7 +311,39 @@
         .minimax-settings label {
             color: #333;
             font-size: 14px;
-        }        .move-history {
+        }
+
+        .edit-mode-controls {
+            background: #fff8e1;
+            border: 1px solid #ffb74d;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 15px 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+
+
+        .square.edit-mode {
+            border: 2px dashed #999;
+        }
+
+        .square.edit-target {
+            background-color: #86efac !important;
+            box-shadow: inset 0 0 0 2px #16a34a;
+        }
+
+        .square.drag-over {
+            background-color: #93c5fd !important;
+            box-shadow: inset 0 0 0 3px #3b82f6;
+        }
+
+        .board-piece.dragging-from-board {
+            opacity: 0.5;
+            transform: scale(1.2);
+        }
+
+        .move-history {
             margin-top: 20px;
             max-height: 150px;
             overflow-y: auto;
@@ -405,6 +448,7 @@
                 <option value="human-vs-computer">Human vs Computer (Random)</option>
                 <option value="human-vs-greedy">Human vs Computer (Greedy)</option>
                 <option value="human-vs-minimax">Human vs Computer (Minimax)</option>
+                <option value="edit-mode">Edit Board Setup</option>
             </select>
         </div>
         
@@ -423,7 +467,19 @@
             </div>
         </div>
         
-        <div id="game-status" class="game-status turn-white">
+        <div id="edit-mode-controls" class="edit-mode-controls" style="display: none; margin: 10px 0; padding: 15px; background: #fff8e1; border-radius: 8px; border: 1px solid #ffb74d;">
+            <h3 style="text-align: center; margin-bottom: 15px; color: #333;">📝 Edit Board Setup</h3>
+            <div style="text-align: center; margin-bottom: 15px;">
+                <p style="font-size: 14px; color: #666; margin-bottom: 10px;">Drag pieces on the board to move them or drag them off the board to remove them.</p>
+                <div style="display: flex; gap: 10px; justify-content: center; align-items: center; flex-wrap: wrap;">
+                    <button class="btn" onclick="clearBoard()" style="background: #dc2626; font-size: 14px; padding: 8px 16px;">Clear Board</button>
+                    <button class="btn" onclick="resetToStandardSetup()" style="background: #16a34a; font-size: 14px; padding: 8px 16px;">Standard Setup</button>
+                    <button class="btn" onclick="finishEditing()" style="background: #4f46e5; font-size: 14px; padding: 8px 16px;">Start Game</button>
+                </div>
+            </div>
+        </div>
+        
+        <div id="game-status" class="game-status turn-white" ondragover="handleRemoveZoneDragOver(event)" ondrop="handleRemoveZoneDrop(event)" ondragleave="handleRemoveZoneDragLeave(event)">
             White's Turn
         </div>
         

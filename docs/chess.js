@@ -41,6 +41,8 @@ let blackKingPos = [0, 4];
 let disabledKnights = new Set(); // Track knights that cannot move
 let gameMode = 'human-vs-human'; // 'human-vs-human' or 'human-vs-computer'
 let isComputerThinking = false;
+let isEditMode = false;
+let selectedPalettePiece = null;
 
 // Piece values for greedy CPU
 const pieceValues = {
@@ -103,6 +105,11 @@ function handleSquareTouch(event) {
 }
 
 function handleSquareInteraction(row, col) {
+    // In edit mode, don't handle clicks - only drag and drop
+    if (isEditMode) {
+        return;
+    }
+    
     // Don't allow interaction if computer is thinking or if it's computer's turn
     if (isComputerThinking || (gameMode !== 'human-vs-human' && currentPlayer === 'black')) {
         return;
@@ -131,7 +138,26 @@ function handleSquareInteraction(row, col) {
 
 // Handle drag start for pieces
 function handleDragStart(event) {
-    if (gameOver) return;
+    if (gameOver) {
+        event.preventDefault();
+        return;
+    }
+    
+    // In edit mode, handle board piece dragging differently
+    if (isEditMode) {
+        const square = event.target.parentElement;
+        const row = parseInt(square.dataset.row);
+        const col = parseInt(square.dataset.col);
+        
+        event.dataTransfer.setData('text/plain', JSON.stringify({ 
+            type: 'board-piece',
+            piece: board[row][col],
+            fromRow: row, 
+            fromCol: col 
+        }));
+        event.target.classList.add('dragging-from-board');
+        return;
+    }
     
     // Don't allow dragging if computer is thinking or if it's computer's turn
     if (isComputerThinking || (gameMode !== 'human-vs-human' && currentPlayer === 'black')) {
@@ -165,37 +191,127 @@ function handleDragStart(event) {
     selectSquare(row, col);
 }
 
+
+
 // Handle drag over event
 function handleDragOver(event) {
     event.preventDefault(); // Necessary to allow drop
-    event.dataTransfer.dropEffect = 'move';
+    
+    if (isEditMode) {
+        event.dataTransfer.dropEffect = 'move';
+        // Add visual feedback for edit mode
+        if (event.target.classList.contains('square')) {
+            event.target.classList.add('drag-over');
+        }
+    } else {
+        event.dataTransfer.dropEffect = 'move';
+    }
 }
 
 // Handle drop event
 function handleDrop(event) {
     event.preventDefault();
     
-    const dragData = JSON.parse(event.dataTransfer.getData('text/plain'));
-    const fromRow = dragData.row;
-    const fromCol = dragData.col;
+    // Remove drag over styling
+    event.currentTarget.classList.remove('drag-over');
     
+    const dragData = JSON.parse(event.dataTransfer.getData('text/plain'));
     const square = event.currentTarget;
     const toRow = parseInt(square.dataset.row);
     const toCol = parseInt(square.dataset.col);
     
-    // Remove dragging class
-    const draggedPiece = document.querySelector('.piece.dragging');
-    if (draggedPiece) {
-        draggedPiece.classList.remove('dragging');
+    // Remove dragging classes
+    document.querySelectorAll('.dragging-from-board').forEach(el => {
+        el.classList.remove('dragging-from-board');
+    });
+    
+    if (isEditMode) {
+        handleEditModeDrop(dragData, toRow, toCol);
+        return;
     }
     
-    // Try to make the move
+    // Regular game mode drop
+    const fromRow = dragData.row;
+    const fromCol = dragData.col;
     makeMove(fromRow, fromCol, toRow, toCol);
 }
 
 // Handle drag leave event
 function handleDragLeave(event) {
-    // Optional: could add visual feedback when dragging leaves a square
+    // Remove drag over styling when leaving a square
+    event.currentTarget.classList.remove('drag-over');
+}
+
+// Handle edit mode drop
+function handleEditModeDrop(dragData, toRow, toCol) {
+    if (dragData.type === 'board-piece') {
+        // Moving a piece on the board
+        const fromRow = dragData.fromRow;
+        const fromCol = dragData.fromCol;
+        
+        // Move the piece
+        board[toRow][toCol] = dragData.piece;
+        board[fromRow][fromCol] = null;
+        
+        // Update king positions
+        if (dragData.piece === 'K') whiteKingPos = [toRow, toCol];
+        if (dragData.piece === 'k') blackKingPos = [toRow, toCol];
+        
+        initBoard();
+        updateGameStatus(`${getPieceName(dragData.piece)} moved to ${String.fromCharCode(65 + toCol)}${8 - toRow}`, 'edit-mode');
+    }
+}
+
+// Handle remove zone drag over
+function handleRemoveZoneDragOver(event) {
+    if (!isEditMode) return;
+    
+    event.preventDefault();
+    
+    // Note: getData is not reliable in dragover, so we'll use a simpler approach
+    const draggedElement = document.querySelector('.dragging-from-board');
+    if (draggedElement) {
+        event.dataTransfer.dropEffect = 'move';
+        event.currentTarget.classList.add('remove-zone-active');
+        event.currentTarget.textContent = "Drop here to remove piece";
+    }
+}
+
+// Handle remove zone drop
+function handleRemoveZoneDrop(event) {
+    if (!isEditMode) return;
+    
+    event.preventDefault();
+    event.currentTarget.classList.remove('remove-zone-active');
+    
+    const dragData = JSON.parse(event.dataTransfer.getData('text/plain'));
+    
+    if (dragData.type === 'board-piece') {
+        // Remove the piece from the board
+        board[dragData.fromRow][dragData.fromCol] = null;
+        
+        // Clear king position if removing a king
+        if (dragData.piece === 'K') whiteKingPos = null;
+        if (dragData.piece === 'k') blackKingPos = null;
+        
+        // Remove dragging classes
+        document.querySelectorAll('.dragging-from-board').forEach(el => {
+            el.classList.remove('dragging-from-board');
+        });
+        
+        initBoard();
+        updateGameStatus(`${getPieceName(dragData.piece)} removed from board`, 'edit-mode');
+    } else {
+        updateGameStatus("Edit Mode - Drag pieces on the board to move them or remove them", 'edit-mode');
+    }
+}
+
+// Handle remove zone drag leave
+function handleRemoveZoneDragLeave(event) {
+    if (!isEditMode) return;
+    
+    event.currentTarget.classList.remove('remove-zone-active');
+    updateGameStatus("Edit Mode - Drag pieces on the board to move them or remove them", 'edit-mode');
 }
 
 function selectSquare(row, col) {
@@ -757,13 +873,29 @@ function changeGameMode() {
     
     // Show/hide minimax settings
     const minimaxSettings = document.getElementById('minimax-settings');
+    const editModeControls = document.getElementById('edit-mode-controls');
+    
     if (gameMode === 'human-vs-minimax') {
         minimaxSettings.style.display = 'block';
+        editModeControls.style.display = 'none';
+        isEditMode = false;
+    } else if (gameMode === 'edit-mode') {
+        minimaxSettings.style.display = 'none';
+        editModeControls.style.display = 'block';
+        isEditMode = true;
+        selectedPalettePiece = null;
+        updateGameStatus("Edit Mode - Drag pieces on the board to move them or remove them", 'edit-mode');
     } else {
         minimaxSettings.style.display = 'none';
+        editModeControls.style.display = 'none';
+        isEditMode = false;
     }
     
-    resetGame(); // Reset the game when mode changes
+    if (!isEditMode) {
+        resetGame(); // Reset the game when mode changes (except in edit mode)
+    } else {
+        initBoard(); // Just refresh the board display in edit mode
+    }
 }
 
 function resetGame() {
@@ -818,6 +950,93 @@ function exportGameHistory() {
     // Clean up the URL
     URL.revokeObjectURL(url);
 }
+
+// Edit Mode Functions
+
+function getPieceName(piece) {
+    const names = {
+        'K': 'White King', 'Q': 'White Queen', 'R': 'White Rook', 'B': 'White Bishop', 
+        'N': 'White Knight', 'A': 'White Archer', 'P': 'White Pawn',
+        'k': 'Black King', 'q': 'Black Queen', 'r': 'Black Rook', 'b': 'Black Bishop', 
+        'n': 'Black Knight', 'a': 'Black Archer', 'p': 'Black Pawn'
+    };
+    return names[piece] || 'Unknown Piece';
+}
+
+function clearBoard() {
+    if (confirm('Are you sure you want to clear the entire board?')) {
+        board = Array(8).fill(null).map(() => Array(8).fill(null));
+        whiteKingPos = null;
+        blackKingPos = null;
+        disabledKnights.clear();
+        initBoard();
+        updateGameStatus("Board cleared - Place pieces from the palette", 'edit-mode');
+    }
+}
+
+function resetToStandardSetup() {
+    if (confirm('Reset to standard chess setup?')) {
+        board = [
+            ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'],
+            ['p', 'a', 'p', 'p', 'p', 'p', 'a', 'p'],
+            [null, null, null, null, null, null, null, null],
+            [null, null, null, null, null, null, null, null],
+            [null, null, null, null, null, null, null, null],
+            [null, null, null, null, null, null, null, null],
+            ['P', 'A', 'P', 'P', 'P', 'P', 'A', 'P'],
+            ['R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R']
+        ];
+        whiteKingPos = [7, 4];
+        blackKingPos = [0, 4];
+        disabledKnights.clear();
+        initBoard();
+        updateGameStatus("Standard setup restored - Continue editing or start game", 'edit-mode');
+    }
+}
+
+function finishEditing() {
+    // Validate that both kings are present
+    let whiteKingFound = false;
+    let blackKingFound = false;
+    
+    for (let row = 0; row < 8; row++) {
+        for (let col = 0; col < 8; col++) {
+            if (board[row][col] === 'K') {
+                whiteKingFound = true;
+                whiteKingPos = [row, col];
+            }
+            if (board[row][col] === 'k') {
+                blackKingFound = true;
+                blackKingPos = [row, col];
+            }
+        }
+    }
+    
+    if (!whiteKingFound || !blackKingFound) {
+        alert('Both White and Black kings must be placed on the board before starting the game.');
+        return;
+    }
+    
+    // Switch to human vs human mode
+    document.getElementById('game-mode').value = 'human-vs-human';
+    gameMode = 'human-vs-human';
+    isEditMode = false;
+    
+    // Hide edit controls
+    document.getElementById('edit-mode-controls').style.display = 'none';
+    
+    // Initialize game state
+    currentPlayer = 'white';
+    selectedSquare = null;
+    gameOver = false;
+    moveHistory = [];
+    selectedPalettePiece = null;
+    
+    initBoard();
+    updateGameStatus("White's Turn", 'turn-white');
+}
+
+
 
 function makeComputerMove() {
     if (gameMode === 'human-vs-human') return;
