@@ -269,13 +269,38 @@
 
         .game-mode-selector {
             text-align: center;
-            margin-bottom: 15px;
-            padding: 10px;
-            background: #f8f9fa;
-            border-radius: 8px;
+            margin-bottom: 20px;
         }
 
-        .move-history {
+        .minimax-settings {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 15px 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .minimax-settings input[type="number"] {
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            padding: 6px 8px;
+            font-size: 14px;
+            width: 70px;
+            text-align: center;
+            transition: border-color 0.2s ease;
+        }
+
+        .minimax-settings input[type="number"]:focus {
+            outline: none;
+            border-color: #4f46e5;
+            box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.2);
+        }
+
+        .minimax-settings label {
+            color: #333;
+            font-size: 14px;
+        }        .move-history {
             margin-top: 20px;
             max-height: 150px;
             overflow-y: auto;
@@ -381,6 +406,21 @@
                 <option value="human-vs-greedy">Human vs Computer (Greedy)</option>
                 <option value="human-vs-minimax">Human vs Computer (Minimax)</option>
             </select>
+        </div>
+        
+        <div id="minimax-settings" class="minimax-settings" style="display: none; margin: 10px 0; padding: 10px; background: #f8f9fa; border-radius: 8px; border: 1px solid #e9ecef;">
+            <div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: center; justify-content: center;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <label for="thinking-time" style="font-weight: bold; white-space: nowrap;">Thinking Time:</label>
+                    <input type="number" id="thinking-time" min="1" max="30" value="5" style="width: 60px; padding: 4px; border-radius: 4px; border: 1px solid #ccc; text-align: center;">
+                    <span style="font-size: 14px; color: #666;">seconds</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <label for="max-depth" style="font-weight: bold; white-space: nowrap;">Max Depth:</label>
+                    <input type="number" id="max-depth" min="1" max="6" value="3" style="width: 60px; padding: 4px; border-radius: 4px; border: 1px solid #ccc; text-align: center;">
+                    <span style="font-size: 14px; color: #666;">levels</span>
+                </div>
+            </div>
         </div>
         
         <div id="game-status" class="game-status turn-white">

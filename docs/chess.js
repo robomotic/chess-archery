@@ -754,6 +754,15 @@ function updateMoveHistory() {
 function changeGameMode() {
     const select = document.getElementById('game-mode');
     gameMode = select.value;
+    
+    // Show/hide minimax settings
+    const minimaxSettings = document.getElementById('minimax-settings');
+    if (gameMode === 'human-vs-minimax') {
+        minimaxSettings.style.display = 'block';
+    } else {
+        minimaxSettings.style.display = 'none';
+    }
+    
     resetGame(); // Reset the game when mode changes
 }
 
@@ -1033,13 +1042,20 @@ function getMinDistanceToWhitePieces(row, col) {
 function makeMinimaxMove() {
     console.log('Computer (Minimax) is thinking...');
     
+    // Get user-configurable settings
+    const thinkingTimeElement = document.getElementById('thinking-time');
+    const maxDepthElement = document.getElementById('max-depth');
+    
+    const thinkingTimeSeconds = thinkingTimeElement ? parseInt(thinkingTimeElement.value) || 5 : 5;
+    const userMaxDepth = maxDepthElement ? parseInt(maxDepthElement.value) || 3 : 3;
+    
     const startTime = performance.now();
-    const maxTime = 150; // Maximum time in milliseconds
-    let depth = 2; // Start with depth 2 for faster response
+    const maxTime = thinkingTimeSeconds * 1000; // Convert to milliseconds
+    let depth = 1; // Start with depth 1 for faster initial response
     let bestResult = null;
     
-    // Iterative deepening with time control
-    while (depth <= 4) {
+    // Iterative deepening with time and depth control
+    while (depth <= userMaxDepth) {
         const result = minimax(board, depth, -Infinity, Infinity, true, currentPlayer, startTime, maxTime);
         
         if (result.timeOut) {
@@ -1050,7 +1066,7 @@ function makeMinimaxMove() {
         bestResult = result;
         
         const elapsedTime = performance.now() - startTime;
-        if (elapsedTime > maxTime * 0.7) { // Use 70% of time limit as buffer
+        if (elapsedTime > maxTime * 0.8) { // Use 80% of time limit as buffer
             console.log(`Stopping search at depth ${depth} (${elapsedTime.toFixed(1)}ms)`);
             break;
         }
@@ -1061,7 +1077,7 @@ function makeMinimaxMove() {
     if (bestResult && bestResult.move) {
         const [fromRow, fromCol, toRow, toCol] = bestResult.move;
         const elapsedTime = performance.now() - startTime;
-        console.log(`Computer (Minimax) plays: ${String.fromCharCode(65 + fromCol)}${8 - fromRow} to ${String.fromCharCode(65 + toCol)}${8 - toRow} (Score: ${bestResult.score}, Time: ${elapsedTime.toFixed(1)}ms, Depth: ${depth - 1})`);
+        console.log(`Computer (Minimax) plays: ${String.fromCharCode(65 + fromCol)}${8 - fromRow} to ${String.fromCharCode(65 + toCol)}${8 - toRow} (Score: ${bestResult.score}, Time: ${elapsedTime.toFixed(1)}ms, Depth: ${depth - 1}, Max Depth: ${userMaxDepth})`);
         makeMove(fromRow, fromCol, toRow, toCol);
     } else {
         console.log('No valid moves found for computer (Minimax)');
@@ -1407,6 +1423,9 @@ function closeRules() {
 window.addEventListener('DOMContentLoaded', () => {
     initBoard();
     updateGameStatus("White's Turn", 'turn-white');
+    
+    // Initialize minimax settings visibility
+    changeGameMode();
 });
 
 // Close modal when clicking outside
