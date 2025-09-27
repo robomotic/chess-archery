@@ -892,7 +892,7 @@ function changeGameMode() {
     }
     
     if (!isEditMode) {
-        resetGame(); // Reset the game when mode changes (except in edit mode)
+        resetGameState(); // Reset the game state but preserve board position
     } else {
         initBoard(); // Just refresh the board display in edit mode
     }
@@ -909,17 +909,43 @@ function resetGame() {
         ['P', 'A', 'P', 'P', 'P', 'P', 'A', 'P'],
         ['R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R']
     ];
+    whiteKingPos = [7, 4];
+    blackKingPos = [0, 4];
+    resetGameState();
+}
+
+// Reset game state without changing board position
+function resetGameState() {
     currentPlayer = 'white';
     selectedSquare = null;
     gameOver = false;
     moveHistory = [];
-    whiteKingPos = [7, 4];
-    blackKingPos = [0, 4];
     disabledKnights.clear(); // Clear disabled knights
     isComputerThinking = false;
+    
+    // Find kings on the current board
+    findKingPositions();
+    
     updateGameStatus("White's Turn", 'turn-white');
     updateMoveHistory();
     initBoard();
+}
+
+// Find and update king positions on the current board
+function findKingPositions() {
+    whiteKingPos = null;
+    blackKingPos = null;
+    
+    for (let row = 0; row < 8; row++) {
+        for (let col = 0; col < 8; col++) {
+            if (board[row][col] === 'K') {
+                whiteKingPos = [row, col];
+            }
+            if (board[row][col] === 'k') {
+                blackKingPos = [row, col];
+            }
+        }
+    }
 }
 
 function exportGameHistory() {
