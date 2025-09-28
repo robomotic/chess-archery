@@ -353,12 +353,14 @@ function makeMove(fromRow, fromCol, toRow, toCol) {
         return;
     }
 
-    // Check if this is an archer ranged attack (1 or 2 cells away in front)
+    // Check if this is an archer ranged attack
     const capturedPiece = board[toRow][toCol];
-    const isArcherRangedAttack = piece.toLowerCase() === 'a' && 
-                               (Math.abs(toRow - fromRow) === 1 || Math.abs(toRow - fromRow) === 2) && 
-                               toCol === fromCol && 
-                               capturedPiece;
+    const isArcherRangedAttack = piece.toLowerCase() === 'a' && capturedPiece && (
+        // Vertical attacks: 1 or 2 cells away vertically (forward or backward)
+        ((Math.abs(toRow - fromRow) === 1 || Math.abs(toRow - fromRow) === 2) && toCol === fromCol) ||
+        // Diagonal attacks: 1 cell away diagonally
+        (Math.abs(toRow - fromRow) === 1 && Math.abs(toCol - fromCol) === 1)
+    );
     
     // Check if a king is being captured
     if (capturedPiece && capturedPiece.toLowerCase() === 'k') {
@@ -716,32 +718,55 @@ function getPossibleMoves(row, col, piece) {
                 }
             });
             
-            // Ranged Attack: 1 or 2 cells away only in front, only pawns, bishops, kings, knights, and other archers
-            const attackDirection = isWhite ? -1 : 1;
+            // Ranged Attacks
+            const forwardDirection = isWhite ? -1 : 1;
+            const backwardDirection = isWhite ? 1 : -1;
             
-            // Check 1 cell away
-            const attackRow1 = row + attackDirection;
-            if (attackRow1 >= 0 && attackRow1 < 8) {
-                const targetPiece = board[attackRow1][col];
-                if (targetPiece && !isPieceOwnedByCurrentPlayer(targetPiece)) {
-                    const targetType = targetPiece.toLowerCase();
-                    if (targetType === 'p' || targetType === 'b' || targetType === 'k' || targetType === 'n' || targetType === 'a') {
-                        moves.push([attackRow1, col]);
+            // Forward attacks: 1 or 2 cells away vertically in front
+            for (let distance = 1; distance <= 2; distance++) {
+                const attackRow = row + (distance * forwardDirection);
+                if (attackRow >= 0 && attackRow < 8) {
+                    const targetPiece = board[attackRow][col];
+                    if (targetPiece && !isPieceOwnedByCurrentPlayer(targetPiece)) {
+                        const targetType = targetPiece.toLowerCase();
+                        if (targetType === 'p' || targetType === 'b' || targetType === 'k' || targetType === 'n' || targetType === 'a') {
+                            moves.push([attackRow, col]);
+                        }
                     }
                 }
             }
             
-            // Check 2 cells away
-            const attackRow2 = row + (2 * attackDirection);
-            if (attackRow2 >= 0 && attackRow2 < 8) {
-                const targetPiece = board[attackRow2][col];
-                if (targetPiece && !isPieceOwnedByCurrentPlayer(targetPiece)) {
-                    const targetType = targetPiece.toLowerCase();
-                    if (targetType === 'p' || targetType === 'b' || targetType === 'k' || targetType === 'n' || targetType === 'a') {
-                        moves.push([attackRow2, col]);
+            // Backward attacks: 1 or 2 cells away vertically behind
+            for (let distance = 1; distance <= 2; distance++) {
+                const attackRow = row + (distance * backwardDirection);
+                if (attackRow >= 0 && attackRow < 8) {
+                    const targetPiece = board[attackRow][col];
+                    if (targetPiece && !isPieceOwnedByCurrentPlayer(targetPiece)) {
+                        const targetType = targetPiece.toLowerCase();
+                        if (targetType === 'p' || targetType === 'b' || targetType === 'k' || targetType === 'n' || targetType === 'a') {
+                            moves.push([attackRow, col]);
+                        }
                     }
                 }
             }
+            
+            // Diagonal attacks: 1 cell away diagonally in all directions
+            const diagonalAttacks = [
+                [-1, -1], [-1, 1], [1, -1], [1, 1]
+            ];
+            diagonalAttacks.forEach(([dr, dc]) => {
+                const attackRow = row + dr;
+                const attackCol = col + dc;
+                if (attackRow >= 0 && attackRow < 8 && attackCol >= 0 && attackCol < 8) {
+                    const targetPiece = board[attackRow][attackCol];
+                    if (targetPiece && !isPieceOwnedByCurrentPlayer(targetPiece)) {
+                        const targetType = targetPiece.toLowerCase();
+                        if (targetType === 'p' || targetType === 'b' || targetType === 'k' || targetType === 'n' || targetType === 'a') {
+                            moves.push([attackRow, attackCol]);
+                        }
+                    }
+                }
+            });
             break;
     }
 
@@ -1571,9 +1596,12 @@ function simulateMove(boardState, fromRow, fromCol, toRow, toCol, player) {
     
     // Check for archer ranged attack
     const isArcherRangedAttack = (piece.toLowerCase() === 'a') && 
-                                Math.abs(toRow - fromRow) <= 2 && 
-                                toCol === fromCol && 
-                                boardState[toRow][toCol] !== null;
+                                boardState[toRow][toCol] !== null && (
+                                    // Vertical attacks: 1 or 2 cells away vertically
+                                    ((Math.abs(toRow - fromRow) === 1 || Math.abs(toRow - fromRow) === 2) && toCol === fromCol) ||
+                                    // Diagonal attacks: 1 cell away diagonally
+                                    (Math.abs(toRow - fromRow) === 1 && Math.abs(toCol - fromCol) === 1)
+                                );
     
     if (isArcherRangedAttack) {
         // For simulation, just remove the target piece

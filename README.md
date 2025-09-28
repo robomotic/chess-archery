@@ -15,14 +15,16 @@ Archess is played on a standard 8x8 chessboard with all traditional chess pieces
 ### Key Features
 
 - **Human vs Human** gameplay
-- **Multiple AI Opponents**: Random, Greedy, and strategic Minimax AI
-- **Enhanced Move History** with detailed piece notation
+- **Multiple AI Opponents**: Random, Greedy, and strategic Minimax AI with configurable difficulty
+- **Board Editor**: Create custom starting positions with drag-and-drop interface
+- **Enhanced Move History** with detailed piece notation and export functionality
 - **Touch-friendly** interface for mobile devices
 - **Visual move highlighting** with color-coded attack ranges
-- **Drag & Drop** support for piece movement
-- **Check/Checkmate detection**
-- **Performance optimized** AI with time controls
+- **Drag & Drop** support for piece movement and board editing
+- **Check/Checkmate detection** with strategic AI evaluation
+- **Performance optimized** AI with user-configurable thinking time and search depth
 - **Responsive design** that works on all screen sizes
+- **Custom board positions** that persist across game mode changes
 
 ## 🏹 The Archer Piece
 
@@ -34,10 +36,13 @@ Archess is played on a standard 8x8 chessboard with all traditional chess pieces
 Archers can move **one space in any direction** (horizontal, vertical, or diagonal), but **only to empty squares**. They cannot capture pieces by moving into them.
 
 ### Attack Rules
-Archers perform **ranged attacks** on enemy pieces that are **1 or 2 cells away directly in front** of them:
+Archers perform **ranged attacks** on enemy pieces within their extended range:
 
 - **Valid Targets**: Pawns, Bishops, Kings, Knights, and other Archers
-- **Attack Range**: 1 or 2 cells directly forward (vertical only)
+- **Attack Range**: 
+  - **Forward**: 1 or 2 cells directly ahead (vertical)
+  - **Backward**: 1 or 2 cells directly behind (vertical)
+  - **Diagonal**: 1 cell in any diagonal direction
 - **No Movement**: The Archer stays in its original position after attacking
 - **Visual Indicator**: Ranged attack targets are highlighted in red
 
@@ -61,6 +66,8 @@ Archers can be captured by any piece, including other Archers, following standar
 4. **Turn-Based Play**: Players alternate turns (White goes first)
 5. **Game Modes**: Select from Human vs Human or three AI difficulty levels
 6. **Move History**: Review detailed notation of all moves including piece types and special actions
+7. **Board Editor**: Use Edit mode to create custom starting positions by dragging pieces around the board
+8. **Export/Import**: Save your custom board positions and move history
 
 ## 🧠 AI Opponents
 
@@ -85,20 +92,25 @@ Archess features multiple AI difficulty levels, each with unique strategies:
 ### **Minimax AI** 🧠
 - **Strategy**: Advanced strategic planning with lookahead
 - **Behavior**:
-  - Thinks 2-4 moves ahead using minimax algorithm
+  - User-configurable search depth (1-6 levels, default: 3)
+  - User-configurable thinking time (1-30 seconds, default: 5)
   - Evaluates positions based on material, position, king safety, and mobility
+  - Enhanced evaluation that penalizes check situations (-50 points)
   - Uses alpha-beta pruning for optimal performance
-  - Time-controlled computation (under 150ms per move)
-- **Difficulty**: Advanced strategic opponent
+  - Adaptive time management based on user preferences
+- **Difficulty**: Advanced strategic opponent with customizable challenge level
 
 All AI modes respect Archess special rules including archer ranged attacks and knight paralysis mechanics.
 
 ## 🎯 Strategy Tips
 
-- **Archer Positioning**: Place Archers where they can control key forward squares
+- **Archer Positioning**: Place Archers where they can control key squares in multiple directions
+- **Enhanced Archer Tactics**: Utilize the new diagonal and backward attack capabilities for defensive positioning
 - **Knight Protection**: Be cautious when attacking Knights - the coin flip adds uncertainty
 - **Ranged Pressure**: Use Archers to apply pressure without exposing them to immediate capture
-- **King Safety**: Remember that Archers can attack Kings from a distance
+- **King Safety**: Remember that Archers can attack Kings from multiple directions and distances
+- **Board Editor**: Experiment with custom starting positions to explore new strategic patterns
+- **AI Tuning**: Adjust Minimax difficulty by changing search depth and thinking time for optimal challenge
 
 ## 🔧 Technical Details
 
@@ -106,6 +118,15 @@ All AI modes respect Archess special rules including archer ranged attacks and k
 - **Responsive design** with mobile touch support
 - **Local gameplay** - no server required
 - **Modern browser compatibility**
+- **Advanced AI Implementation**:
+  - Minimax algorithm with alpha-beta pruning
+  - Dynamic evaluation functions with king safety analysis
+  - Configurable search parameters for performance tuning
+- **Interactive Features**:
+  - Drag-and-drop board editor
+  - Real-time move validation and highlighting
+  - Persistent game state management
+  - Export/import functionality for game data
 
 ## 📜 License
 
@@ -151,7 +172,23 @@ Under the following terms:
 2. Open `docs/chess.html` in any modern web browser
 3. Start playing immediately!
 
+### Quick Start Guide
+
+- **New Game**: Select your preferred game mode (Human vs Human or AI opponent)
+- **Custom Setup**: Use Edit mode to create unique starting positions
+- **AI Configuration**: Adjust Minimax difficulty settings for your skill level
+- **Export Games**: Save interesting positions and game histories
+- **Mobile Play**: Fully touch-optimized for smartphones and tablets
+
 No build process, no installation, no dependencies - just pure chess fun with a tactical twist!
+
+## 🎮 Game Modes
+
+- **Human vs Human**: Classic turn-based play for two players
+- **Human vs Random AI**: Beginner-friendly opponent with unpredictable moves
+- **Human vs Greedy AI**: Intermediate challenge focusing on material advantage
+- **Human vs Minimax AI**: Advanced strategic opponent with configurable difficulty
+- **Edit Mode**: Create and modify board positions with drag-and-drop interface
 
 ---
 
